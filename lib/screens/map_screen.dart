@@ -1,4 +1,3 @@
-```dart
 import 'package:flutter/material.dart';
 
 class MapScreen extends StatelessWidget {
@@ -13,4 +12,3 @@ class MapScreen extends StatelessWidget {
     );
   }
 }
-```

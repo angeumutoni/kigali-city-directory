@@ -1,4 +1,3 @@
-```dart
 import 'package:flutter/material.dart';
 
 class SignupScreen extends StatelessWidget {
@@ -36,4 +35,3 @@ class SignupScreen extends StatelessWidget {
     );
   }
 }
-```

@@ -1,4 +1,3 @@
-```dart
 import 'package:flutter/material.dart';
 import '../models/listing.dart';
 
@@ -68,4 +67,3 @@ class ListingDetailScreen extends StatelessWidget {
     );
   }
 }
-```

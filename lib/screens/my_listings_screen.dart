@@ -1,4 +1,3 @@
-```dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/listing_provider.dart';
@@ -48,4 +47,3 @@ class MyListingsScreen extends StatelessWidget {
     );
   }
 }
-```

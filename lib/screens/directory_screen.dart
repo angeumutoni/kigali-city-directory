@@ -1,4 +1,3 @@
-```dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/listing_provider.dart';
@@ -143,4 +142,3 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
     );
   }
 }
-```
