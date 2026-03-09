@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import '../models/listing.dart';
-import '../services/local_listing_service.dart';
+import '../services/firestore_service.dart';
 
 class ListingProvider extends ChangeNotifier {
-  final LocalListingService _service = LocalListingService();
+  final FirestoreService _service = FirestoreService();
 
-  List<Listing> get listings => _service.getListings();
+  List<Listing> listings = [];
 
-  void addListing(Listing listing) {
-    _service.addListing(listing);
-    notifyListeners();
+  void listenToListings() {
+    _service.getListings().listen((data) {
+      listings = data;
+      notifyListeners();
+    });
   }
 
-  void deleteListing(String id) {
-    _service.deleteListing(id);
-    notifyListeners();
+  Future<void> addListing(Listing listing) async {
+    await _service.addListing(listing);
   }
 
-  void updateListing(Listing listing) {
-    _service.updateListing(listing);
-    notifyListeners();
+  Future<void> deleteListing(String id) async {
+    await _service.deleteListing(id);
   }
 }

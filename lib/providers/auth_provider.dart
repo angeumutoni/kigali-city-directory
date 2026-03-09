@@ -1,17 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthProvider extends ChangeNotifier {
-  bool _loggedIn = false;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  bool get isLoggedIn => _loggedIn;
+  User? get user => _auth.currentUser;
 
-  void login() {
-    _loggedIn = true;
-    notifyListeners();
+  bool get isLoggedIn => user != null;
+
+  Future<void> signUp(String email, String password) async {
+    await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
   }
 
-  void logout() {
-    _loggedIn = false;
-    notifyListeners();
+  Future<void> login(String email, String password) async {
+    await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+  }
+
+  Future<void> logout() async {
+    await _auth.signOut();
   }
 }
