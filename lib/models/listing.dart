@@ -1,25 +1,50 @@
 class Listing {
-  final String id;
-  final String name;
-  final String category;
-  final String address;
-  final String contact;
-  final String description;
-  final double latitude;
-  final double longitude;
-  final String createdBy;
-  final DateTime timestamp;
+  String id;
+  String name;
+  String category;
+  String address;
+  String phone;
+  String description;
+  double lat;
+  double lng;
+  String createdBy;
 
   Listing({
     required this.id,
     required this.name,
     required this.category,
     required this.address,
-    required this.contact,
+    required this.phone,
     required this.description,
-    required this.latitude,
-    required this.longitude,
+    required this.lat,
+    required this.lng,
     required this.createdBy,
-    required this.timestamp,
   });
+
+  factory Listing.fromMap(Map<String, dynamic> data, String id) {
+    return Listing(
+      id: id,
+      name: data['name'],
+      category: data['category'],
+      address: data['address'],
+      phone: data['phone'],
+      description: data['description'],
+      lat: data['lat'],
+      lng: data['lng'],
+      createdBy: data['createdBy'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'category': category,
+      'address': address,
+      'phone': phone,
+      'description': description,
+      'lat': lat,
+      'lng': lng,
+      'createdBy': createdBy,
+    };
+  }
 }
