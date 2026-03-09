@@ -1,49 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class SettingsScreen extends StatefulWidget {
+import 'login_screen.dart';
+
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
+  Future logout(BuildContext context) async {
+    await FirebaseAuth.instance.signOut();
 
-class _SettingsScreenState extends State<SettingsScreen> {
-
-  bool notifications = true;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(title: const Text("Settings")),
-
-      body: Column(
-        children: [
-
-          const ListTile(
-            title: Text("User"),
-            subtitle: Text("user@email.com"),
-          ),
-
-          SwitchListTile(
-            title: const Text("Location Notifications"),
-            value: notifications,
-            onChanged: (value) {
-              setState(() {
-                notifications = value;
-              });
-            },
-          ),
-
-          ElevatedButton(
-            onPressed: () {
-              context.read<AuthProvider>().logout();
-            },
-            child: const Text("Logout"),
-          )
-        ],
+      body: Center(
+        child: ElevatedButton.icon(
+          icon: const Icon(Icons.logout),
+          label: const Text("Log Out"),
+          onPressed: () => logout(context),
+        ),
       ),
     );
   }
