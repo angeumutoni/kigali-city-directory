@@ -1,46 +1,92 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/listing_provider.dart';
-import 'create_listing_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class MyListingsScreen extends StatelessWidget {
   const MyListingsScreen({super.key});
 
+  void editListing(BuildContext context, DocumentSnapshot doc) {
+    final controller = TextEditingController(text: doc['name']);
+
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text("Edit Listing"),
+          content: TextField(
+            controller: controller,
+          ),
+          actions: [
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () => Navigator.pop(context),
+            ),
+            ElevatedButton(
+              child: const Text("Update"),
+              onPressed: () {
+                FirebaseFirestore.instance
+                    .collection("listings")
+                    .doc(doc.id)
+                    .update({"name": controller.text});
+
+                Navigator.pop(context);
+              },
+            )
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-
-    final listings = context.watch<ListingProvider>().listings;
+    final uid = FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Bookmarks")),
-
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const CreateListingScreen(),
-            ),
-          );
-        },
+      appBar: AppBar(
+        title: const Text("My Listings"),
       ),
+      body: StreamBuilder(
+        stream: FirebaseFirestore.instance
+            .collection("listings")
+            .where("createdBy", isEqualTo: uid)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-      body: ListView.builder(
-        itemCount: listings.length,
-        itemBuilder: (context, index) {
+          final listings = snapshot.data!.docs;
 
-          final listing = listings[index];
+          return ListView.builder(
+            itemCount: listings.length,
+            itemBuilder: (context, index) {
+              final doc = listings[index];
 
-          return ListTile(
-            title: Text(listing.name),
-            subtitle: Text(listing.category),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () {
-                context.read<ListingProvider>().deleteListing(listing.id);
-              },
-            ),
+              return Card(
+                child: ListTile(
+                  title: Text(doc['name']),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () => editListing(context, doc),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () {
+                          FirebaseFirestore.instance
+                              .collection("listings")
+                              .doc(doc.id)
+                              .delete();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
