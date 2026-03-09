@@ -1,11 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/listing_provider.dart';
-import '../widgets/listing_card.dart';
-import 'listing_detail_screen.dart';
-import 'my_listings_screen.dart';
-import 'map_screen.dart';
-import 'settings_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DirectoryScreen extends StatefulWidget {
   const DirectoryScreen({super.key});
@@ -15,121 +9,142 @@ class DirectoryScreen extends StatefulWidget {
 }
 
 class _DirectoryScreenState extends State<DirectoryScreen> {
-
-  int _index = 0;
+  String searchQuery = "";
+  String selectedCategory = "All";
 
   final categories = [
-    "Cafés",
-    "Pharmacies",
-    "Hospitals",
-    "Parks",
-    "Restaurants"
+    "All",
+    "Hospital",
+    "Police",
+    "Café",
+    "Shopping",
+    "Tourist Attraction"
   ];
 
-  String selectedCategory = "Cafés";
+  void showDetails(BuildContext context, Map listing) {
+    final address =
+        listing['address'] ?? listing['location'] ?? "No address provided";
 
-  @override
-  Widget build(BuildContext context) {
-
-    final listings = context.watch<ListingProvider>().listings;
-
-    final screens = [
-      buildDirectory(listings),
-      const MyListingsScreen(),
-      const MapScreen(),
-      const SettingsScreen(),
-    ];
-
-    return Scaffold(
-      body: screens[_index],
-
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _index,
-        onTap: (value) {
-          setState(() {
-            _index = value;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Services"),
-          BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: "Bookmarks"),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: "Map"),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Settings"),
-        ],
-      ),
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: Text(listing['name']),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Category: ${listing['category']}"),
+              const SizedBox(height: 8),
+              Text("Description: ${listing['description']}"),
+              const SizedBox(height: 8),
+              Text("Address: $address"),
+              const SizedBox(height: 8),
+              Text("Contact: ${listing['contact']}"),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Close"),
+            )
+          ],
+        );
+      },
     );
   }
 
-  Widget buildDirectory(listings) {
-
-    return SafeArea(
-      child: Column(
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Kigali Directory"),
+      ),
+      body: Column(
         children: [
-
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              "Kigali City",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-          ),
-
-          SizedBox(
-            height: 40,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: categories.map((c) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: ChoiceChip(
-                    label: Text(c),
-                    selected: selectedCategory == c,
-                    onSelected: (_) {
-                      setState(() {
-                        selectedCategory = c;
-                      });
-                    },
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-
-          const Padding(
-            padding: EdgeInsets.all(16),
+          Padding(
+            padding: const EdgeInsets.all(10),
             child: TextField(
-              decoration: InputDecoration(
-                hintText: "Search for a service",
+              decoration: const InputDecoration(
+                hintText: "Search places...",
                 prefixIcon: Icon(Icons.search),
               ),
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value.toLowerCase();
+                });
+              },
             ),
           ),
-
-          const Padding(
-            padding: EdgeInsets.only(left: 16),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Near You",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: DropdownButtonFormField(
+              value: selectedCategory,
+              items: categories.map((cat) {
+                return DropdownMenuItem(
+                  value: cat,
+                  child: Text(cat),
+                );
+              }).toList(),
+              onChanged: (val) {
+                setState(() {
+                  selectedCategory = val!;
+                });
+              },
             ),
           ),
-
+          const SizedBox(height: 10),
           Expanded(
-            child: ListView.builder(
-              itemCount: listings.length,
-              itemBuilder: (context, index) {
+            child: StreamBuilder(
+              stream:
+                  FirebaseFirestore.instance.collection("listings").snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-                final listing = listings[index];
+                final listings = snapshot.data!.docs.where((doc) {
+                  final data = doc.data() as Map;
 
-                return ListingCard(
-                  listing: listing,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ListingDetailScreen(listing: listing),
+                  final name = data['name'].toString().toLowerCase();
+
+                  final category = data['category'];
+
+                  final matchesSearch = name.contains(searchQuery);
+
+                  final matchesCategory = selectedCategory == "All"
+                      ? true
+                      : category == selectedCategory;
+
+                  return matchesSearch && matchesCategory;
+                }).toList();
+
+                if (listings.isEmpty) {
+                  return const Center(
+                    child: Text("No listings found"),
+                  );
+                }
+
+                return ListView.builder(
+                  itemCount: listings.length,
+                  itemBuilder: (context, index) {
+                    final listing = listings[index];
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.place,
+                          color: Colors.blue,
+                        ),
+                        title: Text(listing['name']),
+                        subtitle: Text(listing['category']),
+                        onTap: () {
+                          showDetails(context, listing.data());
+                        },
                       ),
                     );
                   },
